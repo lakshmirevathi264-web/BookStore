@@ -1,17 +1,41 @@
 {
   "name": "BookStore Java Web App",
   "image": "mcr.microsoft.com/devcontainers/java:17",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/ant:1": {}
+  },
+
+  "forwardPorts": [8080],
+
+  "postCreateCommand": [
+    // 1. Update package lists and install Tomcat
+    "sudo apt-get update && sudo apt-get install -y tomcat9",
+
+    // 2. Set Tomcat home
+    "export CATALINA_HOME='/usr/share/tomcat9'",
+
+    // 3. Create directories for compiled classes
+    "mkdir -p target/classes",
+
+    // 4. Compile Java Servlets
+    "javac -cp /usr/share/tomcat9/lib/servlet-api.jar:src/main/java src/main/java/com/bookstore/servlets/*.java -d target/classes",
+
+    // 5. Build the WAR file
+    "jar -cvf target/BookStore.war -C target/classes/ . -C src/main/webapp/ .",
+
+    // 6. Deploy WAR as ROOT.war
+    "sudo cp target/BookStore.war ${CATALINA_HOME}/webapps/ROOT.war",
+
+    // 7. Start Tomcat in foreground
+    "sudo ${CATALINA_HOME}/bin/catalina.sh run"
+  ],
+
   "customizations": {
     "vscode": {
       "extensions": [
         "vscjava.vscode-java-pack"
       ]
     }
-  },
-  "forwardPorts": [8080],
-  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y tomcat9 && mkdir -p target/classes && javac -d target/classes $(find src/main/java -name '*.java') && jar -cvf target/BookStore.war -C src/main/webapp/ . -C target/classes/ com && sudo cp target/BookStore.war /var/lib/tomcat9/webapps/ && sudo service tomcat9 start",
-  "remoteUser": "vscode",
-  "features": {
-    "ghcr.io/devcontainers/features/git:1": {}
   }
 }
