@@ -2,40 +2,37 @@
   "name": "BookStore Java Web App",
   "image": "mcr.microsoft.com/devcontainers/java:17",
 
-  "features": {
-    "ghcr.io/devcontainers/features/ant:1": {}
-  },
-
   "forwardPorts": [8080],
 
   "postCreateCommand": [
-    // 1. Install Tomcat
-    "sudo apt-get update && sudo apt-get install -y tomcat9",
+    // 1. Install Dependencies
+    "sudo apt-get update && sudo apt-get install -y tomcat9 ant entr",
 
-    // 2. Set Tomcat home
-    "export CATALINA_HOME='/usr/share/tomcat9'",
-
-    // 3. Create directories for compiled classes
+    // 2. Set environment variables and create target folder
+    "export TOMCAT_HOME='/usr/share/tomcat9'",
+    "export SERVLET_API_JAR='/usr/share/tomcat9/lib/servlet-api.jar'",
     "mkdir -p target/classes",
 
-    // 4. Compile Servlets initially
-    "TOMCAT_LIB='/usr/share/tomcat9/lib'",
-    "javac -cp ${TOMCAT_LIB}/servlet-api.jar -d target/classes src/main/java/com/bookstore/servlets/*.java",
+    // 3. Compile Servlets
+    "echo 'Compiling Servlets...'",
+    "javac -cp ${SERVLET_API_JAR} -d target/classes src/main/java/com/bookstore/servlets/*.java",
 
-    // 5. Build initial WAR file
+    // 4. Copy JSPs and other web resources
     "cp -r src/main/webapp/* target/classes/",
+
+    // 5. Build WAR file
+    "echo 'Building WAR file...'",
     "jar -cvf target/BookStore.war -C target/classes/ .",
 
-    // 6. Deploy WAR as ROOT.war
-    "sudo cp target/BookStore.war ${CATALINA_HOME}/webapps/ROOT.war",
+    // 6. Deploy WAR to Tomcat as ROOT.war
+    "echo 'Deploying WAR to Tomcat...'",
+    "sudo cp target/BookStore.war ${TOMCAT_HOME}/webapps/ROOT.war",
 
     // 7. Start Tomcat in background
-    "sudo ${CATALINA_HOME}/bin/catalina.sh start",
+    "sudo ${TOMCAT_HOME}/bin/catalina.sh start",
 
-    // 8. Install entr to watch Java files (optional, lightweight watcher)
-    "sudo apt-get install -y entr",
-
-    // 9. Create a watcher script
+    // 8. Setup hot-reloading watcher script
+    "echo 'Setting up hot-reloading script watch.sh...'",
     "echo 'find src/main/java/com/bookstore/servlets -name \"*.java\" | entr sh -c \"javac -cp /usr/share/tomcat9/lib/servlet-api.jar -d target/classes src/main/java/com/bookstore/servlets/*.java && cp -r src/main/webapp/* target/classes/ && jar -cvf target/BookStore.war -C target/classes/ . && sudo cp target/BookStore.war /usr/share/tomcat9/webapps/ROOT.war\"' > watch.sh",
     "chmod +x watch.sh"
   ],
