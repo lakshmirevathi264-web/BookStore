@@ -1,7 +1,7 @@
 {
   "name": "BookStore Java Web App",
   "image": "mcr.microsoft.com/devcontainers/java:17",
-  
+
   "features": {
     "ghcr.io/devcontainers/features/ant:1": {}
   },
@@ -9,7 +9,7 @@
   "forwardPorts": [8080],
 
   "postCreateCommand": [
-    // 1. Update package lists and install Tomcat
+    // 1. Install Tomcat
     "sudo apt-get update && sudo apt-get install -y tomcat9",
 
     // 2. Set Tomcat home
@@ -18,17 +18,26 @@
     // 3. Create directories for compiled classes
     "mkdir -p target/classes",
 
-    // 4. Compile Java Servlets
-    "javac -cp /usr/share/tomcat9/lib/servlet-api.jar:src/main/java src/main/java/com/bookstore/servlets/*.java -d target/classes",
+    // 4. Compile Servlets initially
+    "TOMCAT_LIB='/usr/share/tomcat9/lib'",
+    "javac -cp ${TOMCAT_LIB}/servlet-api.jar -d target/classes src/main/java/com/bookstore/servlets/*.java",
 
-    // 5. Build the WAR file
-    "jar -cvf target/BookStore.war -C target/classes/ . -C src/main/webapp/ .",
+    // 5. Build initial WAR file
+    "cp -r src/main/webapp/* target/classes/",
+    "jar -cvf target/BookStore.war -C target/classes/ .",
 
     // 6. Deploy WAR as ROOT.war
     "sudo cp target/BookStore.war ${CATALINA_HOME}/webapps/ROOT.war",
 
-    // 7. Start Tomcat in foreground
-    "sudo ${CATALINA_HOME}/bin/catalina.sh run"
+    // 7. Start Tomcat in background
+    "sudo ${CATALINA_HOME}/bin/catalina.sh start",
+
+    // 8. Install entr to watch Java files (optional, lightweight watcher)
+    "sudo apt-get install -y entr",
+
+    // 9. Create a watcher script
+    "echo 'find src/main/java/com/bookstore/servlets -name \"*.java\" | entr sh -c \"javac -cp /usr/share/tomcat9/lib/servlet-api.jar -d target/classes src/main/java/com/bookstore/servlets/*.java && cp -r src/main/webapp/* target/classes/ && jar -cvf target/BookStore.war -C target/classes/ . && sudo cp target/BookStore.war /usr/share/tomcat9/webapps/ROOT.war\"' > watch.sh",
+    "chmod +x watch.sh"
   ],
 
   "customizations": {
