@@ -1,0 +1,10 @@
+{
+  "name": "Java Web App (Tomcat)",
+  "image": "mcr.microsoft.com/devcontainers/java:17",
+  "features": {
+    "ghcr.io/devcontainers/features/tomcat:1": { "version": "latest" }
+  },
+  "customizations": { "vscode": { "extensions": ["vscjava.vscode-java-pack"] } },
+  "forwardPorts": [8080],
+  "postCreateCommand": "mkdir -p target && jar -cvf target/BookStore.war -C src/main/webapp/ . -C target/classes/ com && cp target/BookStore.war ${CATALINA_HOME}/webapps/ && ${CATALINA_HOME}/bin/catalina.sh run"
+}
